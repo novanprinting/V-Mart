@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V-Mart E-Commerce</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f97316">
+    <link rel="apple-touch-icon" href="https://i.ibb.co/LhY0V3J/LOGO-V-MART.png">
+
+    <script>
+ 	 // Mendaftarkan Service Worker
+ 	 if ('serviceWorker' in navigator) {
+ 	   window.addEventListener('load', () => {
+ 	     navigator.serviceWorker.register('sw.js')
+  	      .then(reg => console.log('SW Registered'))
+  	      .catch(err => console.log('SW Registration Failed', err));
+  	  });
+ 	 }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f6; }
+        .category-pill.active { background-color: #059669; color: white; }
+        .cart-badge { position: absolute; top: -5px; right: -5px; font-size: 10px; }
+    </style>
+</head>
+<body class="pb-20">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50 p-4">
+        <div class="flex justify-between items-center max-w-md mx-auto">
+            <img src="https://via.placeholder.com/120x40?text=LOGO+ANDA" alt="Logo" class="h-10">
+            <div class="relative" onclick="toggleCart()">
+                <i class="fa-solid fa-cart-shopping text-2xl text-gray-700"></i>
+                <span id="cart-count" class="cart-badge bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center">0</span>
+            </div>
+        </div>
+        
+        <div class="mt-4 max-w-md mx-auto relative">
+            <input type="text" id="searchInput" onkeyup="filterProducts()" placeholder="Cari produk impian..." 
+                   class="w-full p-3 pl-10 bg-gray-100 rounded-xl border-none focus:ring-2 focus:ring-emerald-500">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-4 text-gray-400"></i>
+        </div>
+    </header>
+
+    <div class="overflow-x-auto whitespace-nowrap p-4 flex gap-2 no-scrollbar">
+        <button onclick="filterCategory('all')" class="category-pill active px-6 py-2 rounded-full border bg-white">Semua</button>
+        <button onclick="filterCategory('kecantikan')" class="category-pill px-6 py-2 rounded-full border bg-white">Kecantikan</button>
+        <button onclick="filterCategory('baju')" class="category-pill px-6 py-2 rounded-full border bg-white">Baju</button>
+        <button onclick="filterCategory('celana')" class="category-pill px-6 py-2 rounded-full border bg-white">Celana</button>
+        <button onclick="filterCategory('elektronik')" class="category-pill px-6 py-2 rounded-full border bg-white">Elektronik</button>
+        <button onclick="filterCategory('sepatu')" class="category-pill px-6 py-2 rounded-full border bg-white">Sepatu</button>
+    </div>
+
+    <main class="p-4 grid grid-cols-2 gap-4 max-w-md mx-auto" id="productGrid">
+        </main>
+
+    <div id="cartModal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] hidden">
+        <div class="absolute bottom-0 w-full bg-white rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Keranjang Belanja</h2>
+                <button onclick="toggleCart()" class="text-gray-500 text-2xl">&times;</button>
+            </div>
+            <div id="cartItems" class="space-y-4 mb-6">
+                </div>
+            
+            <hr class="my-4">
+            
+            <div class="space-y-4">
+                <label class="block font-semibold">Metode Pengiriman:</label>
+                <select id="deliveryMethod" class="w-full p-2 border rounded-lg">
+                    <option value="COD">COD (Bayar di Tempat)</option>
+                    <option value="Diantar">Diantar Kurir</option>
+                    <option value="Ambil Sendiri">Ambil di Toko</option>
+                </select>
+
+                <label class="block font-semibold">Metode Pembayaran:</label>
+                <select id="paymentMethod" class="w-full p-2 border rounded-lg">
+                    <option value="Tunai">Tunai</option>
+                    <option value="Transfer Bank">Transfer Bank</option>
+                </select>
+
+                <div class="flex justify-between font-bold text-lg mt-4">
+                    <span>Total:</span>
+                    <span id="cartTotal">Rp 0</span>
+                </div>
+
+                <button onclick="checkoutWhatsApp()" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-xl"></i> Pesan Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const products = [
+            { id: 1, name: "Serum Glowing", price: 150000, cat: "kecantikan", img: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=200", desc: "Mencerahkan wajah dalam 7 hari." },
+            { id: 2, name: "Kaos Oversize", price: 85000, cat: "baju", img: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=200", desc: "Bahan katun combed 30s dingin." },
+            { id: 3, name: "Chino Pants", price: 125000, cat: "celana", img: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=200", desc: "Nyaman untuk acara formal/santai." },
+            { id: 4, name: "Earbuds Wireless", price: 350000, cat: "elektronik", img: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=200", desc: "Bass mantap, tahan 12 jam." },
+            { id: 5, name: "Sneakers Putih", price: 450000, cat: "sepatu", img: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200", desc: "Desain klasik, kualitas premium." },
+            { id: 6, name: "Lip Matte Red", price: 75000, cat: "kecantikan", img: "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=200", desc: "Tahan lama dan tidak kering." }
+        ];
+
+        let cart = [];
+
+        function renderProducts(data) {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = data.map(p => `
+                <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 product-card" data-cat="${p.cat}">
+                    <img src="${p.img}" class="w-full h-32 object-cover rounded-xl mb-2">
+                    <h3 class="font-semibold text-sm h-10 overflow-hidden">${p.name}</h3>
+                    <p class="text-xs text-gray-500 mb-2">${p.desc}</p>
+                    <p class="text-emerald-600 font-bold mb-3">Rp ${p.price.toLocaleString()}</p>
+                    <button onclick="addToCart(${p.id})" class="w-full bg-gray-900 text-white py-2 rounded-lg text-xs hover:bg-emerald-600 transition">
+                        + Keranjang
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function filterCategory(cat) {
+            document.querySelectorAll('.category-pill').forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.innerText.toLowerCase() === cat) btn.classList.add('active');
+            });
+            const filtered = cat === 'all' ? products : products.filter(p => p.cat === cat);
+            renderProducts(filtered);
+        }
+
+        function filterProducts() {
+            const val = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = products.filter(p => p.name.toLowerCase().includes(val));
+            renderProducts(filtered);
+        }
+
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            cart.push(product);
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            document.getElementById('cart-count').innerText = cart.length;
+            const cartItems = document.getElementById('cartItems');
+            const totalEl = document.getElementById('cartTotal');
+            
+            cartItems.innerHTML = cart.map((item, index) => `
+                <div class="flex justify-between items-center border-b pb-2">
+                    <div>
+                        <p class="font-medium">${item.name}</p>
+                        <p class="text-sm text-emerald-600">Rp ${item.price.toLocaleString()}</p>
+                    </div>
+                    <button onclick="removeFromCart(${index})" class="text-red-500 text-sm"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            `).join('');
+
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            totalEl.innerText = `Rp ${total.toLocaleString()}`;
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartUI();
+        }
+
+        function toggleCart() {
+            const modal = document.getElementById('cartModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function checkoutWhatsApp() {
+            if (cart.length === 0) return alert("Keranjang masih kosong!");
+            
+            const phone = "6281226239220";
+            const delivery = document.getElementById('deliveryMethod').value;
+            const payment = document.getElementById('paymentMethod').value;
+            
+            let message = "*PESANAN BARU*\n----------\n";
+            cart.forEach((item, i) => {
+                message += `${i+1}. ${item.name} - Rp ${item.price.toLocaleString()}\n`;
+            });
+            
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            message += `\n*Total:* Rp ${total.toLocaleString()}`;
+            message += `\n*Pengiriman:* ${delivery}`;
+            message += `\n*Pembayaran:* ${payment}`;
+            
+            const encoded = encodeURIComponent(message);
+            window.open(`https://wa.me/${phone}?text=${encoded}`, '_blank');
+        }
+
+        // Initial Render
+        renderProducts(products);
+    </script>
+</body>
+</html>

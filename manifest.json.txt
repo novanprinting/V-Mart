@@ -1,0 +1,22 @@
+{
+  "name": "V-MART E-Commerce",
+  "short_name": "V-MART",
+  "description": "Belanja Pintar di V-MART",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "V-MART.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "V-MART.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
